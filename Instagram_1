@@ -1,0 +1,54 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+
+# Define the luxury brands and their Instagram URLs
+luxury_brands = {
+    'Chanel': 'https://www.instagram.com/chanelofficial/?hl=en',
+    'Hermes': 'https://www.instagram.com/hermes/?hl=en',
+    'Gucci': 'https://www.instagram.com/gucci/?hl=en',
+    'Dior': 'https://www.instagram.com/dior/?hl=en',
+    'Prada': 'https://www.instagram.com/prada/'
+}
+
+# Define the function to scrape Instagram data for a given brand
+def scrape_instagram_data(brand_url):
+    # Send a GET request to the Instagram URL
+    r = requests.get(brand_url)
+
+    # Use BeautifulSoup to parse the HTML content
+    soup = BeautifulSoup(r.content, 'html.parser')
+
+    # Extract the data for each post
+    data = []
+    for post in soup.find_all('div', {'class': 'v1Nh3'}):
+        post_url = f"https://www.instagram.com{post.find('a')['href']}"
+        post_r = requests.get(post_url)
+        post_soup = BeautifulSoup(post_r.content, 'html.parser')
+        caption = post_soup.find('div', {'class': 'C4VMK'}).text
+        date = post_soup.find('time')['datetime']
+        hashtags = [tag.text for tag in post_soup.find_all('a', {'class': 'xil3i'})]
+        data.append({
+            'brand': caption,
+            'post_content': caption,
+            'post_date': date,
+            'hashtags': ','.join(hashtags)
+        })
+
+    # Return the data
+    return data
+
+# Define the main function to scrape Instagram data for all luxury brands
+def scrape_all_instagram_data():
+    # Create a CSV file to store the data
+    with open('luxury_brands_instagram_data.csv', 'w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=['brand', 'post_content', 'post_date', 'hashtags'])
+        writer.writeheader()
+
+        # Loop through each brand and scrape its Instagram data
+        for brand, url in luxury_brands.items():
+            data = scrape_instagram_data(url)
+            writer.writerows(data)
+
+# Call the main function to start scraping the data
+scrape_all_instagram_data()
